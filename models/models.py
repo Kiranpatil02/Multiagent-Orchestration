@@ -70,4 +70,26 @@ class Task:
     plan_id:str
     type:TaskType
     status:TaskStatus
-    
+    priority:int
+    assigned_agent:str
+    retry_count:int
+    max_retries:int
+    version:int
+    created_at:datetime
+    updated_at:datetime
+
+@dataclass
+class AgentOutput:
+    id:str
+    task_id:int
+    agent_id:str
+    status:AgentStatus
+    payload:str
+    version:int=1
+    confidence_score:Optional[int]=None
+    error_message:Optional[str]=None
+    duration:int=0
+    created_at:datetime=field(default_factory=datetime.utcnow)
+
+
+
