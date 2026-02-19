@@ -45,8 +45,8 @@ class AgentStatus(str,Enum):
 
 @dataclass
 class Request:
-    id: int
-    user_txt:str
+    id: str
+    user_query:str
     status:Status
     plan_id:Optional[str]=None
     created_at: datetime = field(default_factory=datetime.utcnow)
@@ -54,9 +54,10 @@ class Request:
 
 @dataclass
 class Plan:
-    id: int
+    id: str
     request_id:str
     user_query:str
+    status:PlanStatus
     max_revision:int=3
     current_revision:int=0
     version:int=1
