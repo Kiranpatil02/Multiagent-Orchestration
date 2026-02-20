@@ -1,5 +1,5 @@
 from base import Base
-
+from agents.schema.research_schema import RESEARCHER_SCHEMA
 
 
 RESEARCH_SYSTEM_PROMPT=""
@@ -8,16 +8,10 @@ class ResearchAgent(Base):
 
     name="RESEARCHER"
 
-    def execute(self, input_data: dict):
-        topic=input_data["topic"]
+    def __init__(self):
+        super().__init__(RESEARCHER_SCHEMA)
 
-        messages=[
-            {
-                "role":"system",
-                "content":RESEARCH_SYSTEM_PROMPT
-            },
-            {
-                "role":"user",
-                "content":topic
-            }
-        ]
+    def run(self, steps_description: str):
+        
+        return self.execute(RESEARCH_SYSTEM_PROMPT, steps_description)
+    

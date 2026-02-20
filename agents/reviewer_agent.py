@@ -1,5 +1,5 @@
 from base import Base
-
+from agents.schema.reviewer_schema import REVIEWER_SCHEMA
 
 REVIEWER_SYSTEM_PROMPT=""
 
@@ -7,11 +7,10 @@ REVIEWER_SYSTEM_PROMPT=""
 class ReviewerAgent(Base):
     name="REVIEWER"
 
-    def execute(self, input_data:dict):
+    def __init__(self):
+        super().__init__(REVIEWER_SCHEMA)
 
-        draft=input_data["draft"]
 
-        messages = [
-            {"role": "system", "content": REVIEWER_SYSTEM_PROMPT},
-            {"role": "user", "content": draft}
-        ]
+    def run(self, draft:str):
+
+        return self.execute(REVIEWER_SYSTEM_PROMPT,draft)

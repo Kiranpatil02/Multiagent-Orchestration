@@ -6,55 +6,68 @@ from agents.writer_agent import WriterAgent
 from agents.reviewer_agent import ReviewerAgent
 
 
-planner=PlannerAgent()
-researcher=ResearchAgent()
-writer=WriterAgent()
-reviewer=ReviewerAgent()
+MAX_REVIEW=3
+
+class Orchestrator:
+
+    def __init__(self,db_session):
+        self.db=db_session
+        self.planner=PlannerAgent()
+        self.researcher=ResearchAgent()
+        self.writer=WriterAgent()
+        self.reviewer=ReviewerAgent()
 
 
-def process_task(task):
+    def run_task(self,task):
+        try:
+            task.status="PLANNING"
+            # self.db.commit()
 
-    task_id=task["id"]
-    plan_id=task["plan_id"]
-    task_type=task["type"]
-    input_data=json.loads(task["input_json"])
+            plan_result=self.planner.run(task.user_input)
+            task.plan=plan_result
 
-    if task_type==TaskType.PLAN.value:
-        result=planner.execute(input_data)
-        agent_output(task_id,"PLANNER",result,"SUCCESS")
+            self.db.commit()
 
-        for subtask in result["subtasks"]:
-            create_task(plan_id,TaskType.RESEARCH,{"topic":subtask})
+            for subtasks in plan_result["steps"]:
+                task.status="RESEARCHING"
 
-    elif task_type==TaskType.RESEARCH.value:
-        result=researcher.execute(input_data)
+                research=self.researcher.run(subtasks["description"])
 
-        agent_output(task_id,"RESEARCHER",result,"SUCESS")
+                task.status="WRITING"
 
-        finish_task(task_id)
+                draft=self.writer.run(research["research_notes"])
 
-        con=get_cursor()
+                review_count=0
+                approved=False
 
-        count=con.execute(
-            """
-            SELECT COUNT(*) as c FROM tasks
-            WHERE plan_id=? AND type=? AND status!=?
+                while review_count<MAX_REVIEW:
+                    task.status="REVIEWING"
+                    self.db.commit()
 
-            """,(plan_id,TaskType.RESEARCH.value,"FINISHED")
-        ).fetchone()["c"]
+                    review=self.reviewer.run(draft["draft"])
 
-        con.close()
+                    if review["approved"]:
+                        approved=True
+                        final_output+=draft["draft"]
+                        break
 
-        if count==0:
-            create_task(plan_id,TaskType.WRITE,{"plan_id":plan_id})
-        return
-    
-    elif task_type==TaskType.REVIEW.value:
-        result=reviewer.execute(input_data)
+                    rewrite=(
+                        draft["draft"]
+                        +"Reviewer Feedback:"
+                        +review.get("feedback","")
+                    )
 
-        agent_output(task_id,"REVIEWER",result,"SUCCESS")
+                    draft=self.writer.run(rewrite)
+                    review_count+=1
+                if not approved:
+                    raise Exception("Allocated Reviewes exceeded.")
+                
+            task.result=final_output
+            task.status="COMPLETED"
+            self.db.commit()
+        except Exception as e:
+            task.status="FAILED"
+            task.error_message=str(e)
+            self.db.commit()
 
-        if result["approved"]:
-            plan_completed(plan_id)
-
-    finish_task(task_id)
+            raise

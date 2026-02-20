@@ -1,4 +1,5 @@
 from base import Base
+from agents.schema.writer_schema import WRITER_SCHEMA
 
 
 WRITER_SYSTEM_PROMPT=""
@@ -6,18 +7,11 @@ WRITER_SYSTEM_PROMPT=""
 class WriterAgent(Base):
     name="WRITER"
 
-    def execute(self, input_data: dict):
-        research_results=input_data["research_results"]
+    def __init__(self):
+        super().__init__(WRITER_SCHEMA)
 
-        messages=[
-            {
-                "role":"system",
-                "content":WRITER_SYSTEM_PROMPT
-            },
-            {
-                "role":"user",
-                "content":research_results
-            }
-        ]
+    def run(self, details: str):
+      
+      return self.execute(WRITER_SYSTEM_PROMPT,details)
 
         

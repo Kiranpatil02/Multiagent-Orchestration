@@ -1,5 +1,5 @@
 from base import Base
-import json
+from agents.schema.planner_schema import PLANNER_SCHEMA
 
 
 PLANNER_SYSTEM_PROMPT=""
@@ -9,18 +9,13 @@ PLANNER_SYSTEM_PROMPT=""
 class PlannerAgent(Base):
     name="PLANNER AGENT"
 
-    def execute(self, input_data: dict):
-        user_query=input_data["query"]
+    def __init__(self):
+        super().__init__(PLANNER_SCHEMA)
 
-        messages=[
-            {
-                "role":"system",
-                "content":PLANNER_SYSTEM_PROMPT
-            },
-            {
-                "role":"user",
-                "content":user_query
-            }
-        ]
+
+
+    def run(self, user_query: str):
+
+        return self.execute(PLANNER_SYSTEM_PROMPT,user_query)
 
         
