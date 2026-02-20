@@ -8,10 +8,7 @@ class WriterAgent(Base):
     name="WRITER"
 
     def __init__(self):
-        super().__init__(WRITER_SCHEMA)
+        super().__init__(WRITER_SCHEMA,WRITER_SYSTEM_PROMPT)
 
-    def run(self, details: str):
-      
-      return self.execute(WRITER_SYSTEM_PROMPT,details)
 
         

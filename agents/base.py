@@ -4,15 +4,14 @@ import json
 
 class Base:
     
-    def __init__(self,schema:dict):
+    def __init__(self,schema:dict,system_prompt):
         self.schema=schema
+        self.system_prompt=system_prompt
 
-
-    @retries
-    def execute(self, system_prompt:str,user_prompt:str):
+    def run(self,user_prompt:str):
         
         response=([
-           { "role":"system","content":system_prompt},
+           { "role":"system","content":self.system_prompt},
            {"role":"user","content":user_prompt}
         ])
 

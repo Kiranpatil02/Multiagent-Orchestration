@@ -9,9 +9,5 @@ class ResearchAgent(Base):
     name="RESEARCHER"
 
     def __init__(self):
-        super().__init__(RESEARCHER_SCHEMA)
-
-    def run(self, steps_description: str):
-        
-        return self.execute(RESEARCH_SYSTEM_PROMPT, steps_description)
+        super().__init__(RESEARCHER_SCHEMA,RESEARCH_SYSTEM_PROMPT)
     
