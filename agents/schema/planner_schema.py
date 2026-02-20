@@ -1,0 +1,17 @@
+PLANNER_SCHEMA={
+    "type":"object",
+    "properties":{
+        "steps":{
+            "type":"array",
+            "items":{
+                "type":"object",
+                "properties":{
+                    "title":{"type":"string"},
+                    "description":{"type":"string"}
+                },
+                "required":["title","description"]
+            }
+        }
+    },
+    "required":["steps"]
+}
