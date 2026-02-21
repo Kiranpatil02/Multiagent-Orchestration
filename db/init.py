@@ -4,18 +4,14 @@ from pathlib import Path
 
 
 def init_db():
-    schema_path=Path(__file__).parent/"schema.sql"
-    schema=schema_path.read_text()
-
     con=get_cursor()
-    cur=con.cursor()
-
-    cur.executescript(schema)
-
-    con.commit()
-    print(f"Db has been initialised")
-
-
-if __name__=="__main__":
-    init_db()
+    try:
+        with open('db/schema.sql','r') as f:
+            schema=f.read()
+        con.executescript(schema)
+        con.commit()
+        print("DB initialsed...")
+    except Exception as e:
+        print(f"Error in DB: {str(e)}")
+        raise
     

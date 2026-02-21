@@ -6,6 +6,6 @@ class SchemaValidation(Exception):
 
 def validate_schema(data:dict,schema:dict):
     try:
-        validate(data,schema=schema)
+        validate(instance=data,schema=schema)
     except ValidationError as e:
         raise SchemaValidation(str(e))

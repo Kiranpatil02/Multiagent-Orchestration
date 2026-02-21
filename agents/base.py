@@ -1,4 +1,4 @@
-from services.retry import retries
+from services.llm import llm
 from services.validatiors import validate_schema
 import json
 
@@ -10,13 +10,9 @@ class Base:
 
     def run(self,user_prompt:str):
         
-        response=([
-           { "role":"system","content":self.system_prompt},
-           {"role":"user","content":user_prompt}
-        ])
+        result=llm(self.system_prompt,str(user_prompt))
+        # parsed_content=json.loads(response)
 
-        parsed_content=json.loads(response)
+        validate_schema(result,self.schema)
 
-        validate_schema(parsed_content,self.schema)
-
-        return parsed_content
+        return result

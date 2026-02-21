@@ -8,17 +8,14 @@ class TaskType(str, Enum):
 
 class TaskStatus(str,Enum):
     PENDING="PENDING"
-    QUEUED="QUEUED"
     IN_PROGRESS="IN_PROGRESS"
     FAILED="FAILED"
-    CANCELLED="CANCELLED"
     FINISH="FINISH"
 
-# class PlanStatus(str,Enum):
-#     ACTIVE = "ACTIVE"
-#     COMPLETED = "COMPLETED"
-#     FAILED = "FAILED"
-#     CANCELLED = "CANCELLED"
+class PlanStatus(str,Enum):
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 
 
