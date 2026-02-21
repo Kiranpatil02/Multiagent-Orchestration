@@ -8,4 +8,4 @@ def validate_schema(data:dict,schema:dict):
     try:
         validate(instance=data,schema=schema)
     except ValidationError as e:
-        raise SchemaValidation(str(e))
+        raise SchemaValidation("Schema ERROR:", str(e))

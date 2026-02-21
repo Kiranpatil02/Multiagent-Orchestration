@@ -1,4 +1,4 @@
-from base import Base
+from agents.base import Base
 from agents.schema.research_schema import RESEARCHER_SCHEMA
 
 

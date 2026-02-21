@@ -4,7 +4,7 @@ WRITER_SCHEMA={
         "draft":{
             "type":"string"
         },
-        "required":["draft"]
-    }
+    },
+    "required":["draft"]
 }
 

@@ -1,4 +1,4 @@
-from base import Base
+from agents.base import Base
 from agents.schema.writer_schema import WRITER_SCHEMA
 
 

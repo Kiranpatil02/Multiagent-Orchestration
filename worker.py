@@ -29,7 +29,7 @@ def start_worker():
                 time.sleep(1)
                 continue
 
-            print(f"Running task: {task["id"]}")
+            print(f"Running task: {task['id']}")
             orchestrator.start_process(task)
 
         except Exception as e:
@@ -38,6 +38,6 @@ def start_worker():
     print("WORKER STOPPED")
 
 
-# if __name__=="__main__":
-#     init_db()
-#     start_worker()
+if __name__=="__main__":
+    init_db()
+    start_worker()

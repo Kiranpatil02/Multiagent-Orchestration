@@ -5,6 +5,7 @@ from agents.research_agent import ResearchAgent
 from agents.writer_agent import WriterAgent
 from agents.reviewer_agent import ReviewerAgent
 from services.backoff import exponential_backoff
+import json
 
 
 MAX_REVIEW=3
@@ -30,6 +31,8 @@ class Orchestrator:
             
             plan_result=self.planner.run(data["query"])
 
+            print("PLAN RESULTS::",plan_result)
+
             for step in plan_result["steps"]:
                 create_task(
                     plan_id=plan_id,
@@ -40,15 +43,20 @@ class Orchestrator:
 
             finish_task(task_id, plan_result)
             print(f"Done with {len(plan_result['steps'])} research tasks")
+            return
 
         elif task_type==TaskType.RESEARCH.value:
             result=self.researcher.run(data["description"])
             finish_task(task_id,result) 
 
+            print("======RESEARCH RESULTS======")
+
             if all_research_complete(plan_id):
                 all_research=get_all_research_outputs(plan_id)
                 conactinate="\n\n--\nn".join(all_research)
-
+                
+                print("=====Total Research=====",conactinate)
+                
                 create_task(
                     plan_id=plan_id,
                     task_type=TaskType.WRITE.value,
@@ -56,9 +64,12 @@ class Orchestrator:
                     parent_task_id=None
                 )
                 print(" Done with research, now creating write task")
+            return
         
         elif task_type==TaskType.WRITE.value:
             result=self.writer.run(data["research_notes"])
+
+            print("===========wRITE RESULTS==========",result)
 
             finish_task(task_id,result)
 
@@ -70,9 +81,13 @@ class Orchestrator:
                 revision=task["revision"]
             )
             print(f" Draftt written (revision {task['revision']})")
+            return
 
         elif task_type==TaskType.REVIEW.value:
             result=self.reviewer.run(data["draft"])
+
+            print("===============Review agent results=================",result)
+
 
             if result["approved"]:
                 finish_task(task_id,result)
@@ -96,8 +111,9 @@ class Orchestrator:
                 revision=task["revision"] + 1
             )
         
-        finish_task(task_id,result)
-        print(f" Revising.... (attempt: {task['revision'] + 1})")
+            finish_task(task_id,result)
+            print(f" Revising.... (attempt: {task['revision'] + 1})")
+            return
 
     def start_process(self,task):
         try:
@@ -106,9 +122,11 @@ class Orchestrator:
             retry_count=task["retry_count"]
             max_retries=task["max_retries"]
 
+            print("EXCEPTION:",str(e))
+
             if retry_count<max_retries:
                 next_run=exponential_backoff(retry_count)
                 update_task_retry(task["id"],next_run)
             else:
                 failed_task(task["id"])
-                print(f"  ✗ Failed after {task['max_retries']} retries")
+                print(f"Failed after {task['max_retries']} retries",str(e))

@@ -1,4 +1,4 @@
-from base import Base
+from agents.base import Base
 from agents.schema.reviewer_schema import REVIEWER_SCHEMA
 
 REVIEWER_SYSTEM_PROMPT="""

@@ -7,8 +7,8 @@ load_dotenv()
 
 
 client=OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
+    api_key=os.getenv("Z_API_KEY"),
+    base_url="https://api.z.ai/api/paas/v4/"
 )
 
 def llm(system_prompt,user_prompt):
@@ -16,7 +16,7 @@ def llm(system_prompt,user_prompt):
     try:
 
         response=client.chat.completions.create(
-            model="",
+            model="GLM-4.7-Flash",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
