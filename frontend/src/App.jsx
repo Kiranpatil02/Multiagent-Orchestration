@@ -19,15 +19,9 @@ function StatusText({ status }) {
   return <span className={`text-[11px] ${color}`}>{STATUS_LABELS[s] || s}</span>;
 }
 
-function TaskStatus({ status }) {
+function TaskStatusGlyph({ status }) {
   const s = (status || "pending").toLowerCase();
-  const styles = {
-    pending:     "text-zinc-300",
-    in_progress: "text-amber-500",
-    finish:      "text-green-500",
-    complete:    "text-green-500",
-    failed:      "text-red-400",
-  };
+  const styles = { pending: "text-zinc-300", in_progress: "text-amber-500", finish: "text-green-500", complete: "text-green-500", failed: "text-red-400" };
   const labels = { pending: "·", in_progress: "›", finish: "✓", complete: "✓", failed: "✗" };
   return <span className={`text-[11px] shrink-0 ${styles[s] || "text-zinc-300"}`}>{labels[s] || "·"}</span>;
 }
@@ -173,6 +167,65 @@ function TimelineEntry({ entry, isLast }) {
   );
 }
 
+function FeedbackInput({ requestId, onSubmitted }) {
+  const [value, setValue] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const handleSubmit = async () => {
+    if (!value.trim() || submitting) return;
+    setSubmitting(true);
+    setErr(null);
+    try {
+      const res = await fetch(`http://localhost:8000/api/tasks/${requestId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback: value.trim() }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.detail || "Failed to submit");
+      }
+      setSubmitted(true);
+      onSubmitted();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return <p className="text-[11px] text-green-600 mt-3">✓ Details sent — writer is revising.</p>;
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      <p className="text-[11px] text-zinc-400 uppercase tracking-widest">Provide additional details</p>
+      <div className="border border-zinc-200 rounded-md">
+        <textarea
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder="Add context, sources, or specifics the writer should include…"
+          rows={3}
+          className="w-full bg-transparent text-[13px] text-zinc-700 placeholder-zinc-300 px-3 pt-2.5 pb-2 resize-none border-none leading-relaxed block font-[inherit] focus:outline-none"
+        />
+        <div className="border-t border-zinc-100 px-3 py-2 flex items-center justify-between">
+          {err && <p className="text-[11px] text-red-400">{err}</p>}
+          <button
+            onClick={handleSubmit}
+            disabled={!value.trim() || submitting}
+            className={`ml-auto text-[11px] px-3 py-1 rounded border-none cursor-pointer transition-colors font-[inherit] ${value.trim() && !submitting ? "bg-zinc-900 text-white hover:bg-zinc-700" : "bg-zinc-100 text-zinc-400 cursor-not-allowed"}`}
+          >
+            {submitting ? "sending…" : "Send to writer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -215,6 +268,12 @@ function App() {
     return () => clearInterval(pollRef.current);
   }, [requestId, fetchStatus]);
 
+  const handleFeedbackSubmitted = useCallback(() => {
+    setLoading(true);
+    clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => fetchStatus(requestId), 2500);
+  }, [requestId, fetchStatus]);
+
   const handleReset = () => {
     clearInterval(pollRef.current);
     setRequestId(null); setStatusData(null); setError(null);
@@ -231,6 +290,11 @@ function App() {
     pipeline?.writer?.output?.content ||
     pipeline?.writer?.output?.report ||
     (typeof pipeline?.writer?.output === "string" ? pipeline?.writer?.output : null);
+
+  // Show feedback input only when reviewer rejected and nothing is currently processing
+  const reviewerRejected = pipeline?.reviewer?.status === "finish" && pipeline?.reviewer?.approved === false;
+  const pipelineIdle = !loading && pipeline?.writer?.status !== "in_progress";
+  const showFeedbackInput = reviewerRejected && pipelineIdle;
 
   return (
     <div className="min-h-screen bg-white text-zinc-900">
@@ -275,7 +339,8 @@ function App() {
                     <span>{progress.percentage}%</span>
                     <span>{progress.completed}/{progress.total_tasks} tasks</span>
                     {currentAgent && !isDone && <span className="text-amber-500">{currentAgent}</span>}
-                    {isDone && <span className="text-green-600">complete</span>}
+                    {showFeedbackInput && <span className="text-amber-500">awaiting your details</span>}
+                    {isDone && !showFeedbackInput && <span className="text-green-600">complete</span>}
                   </div>
                 </>
               )}
@@ -285,7 +350,7 @@ function App() {
             {pipeline && (
               <>
                 <div className="flex">
-                  {["pipeline", "timeline", "result"].map(t => (
+                  {["pipeline", "timeline", "REPORT"].map(t => (
                     <button
                       key={t}
                       onClick={() => setTab(t)}
@@ -298,7 +363,6 @@ function App() {
 
                 {tab === "pipeline" && (
                   <div>
-                    {/* Planner */}
                     <Section label="Planner" status={pipeline.planner?.status}>
                       {pipeline.planner?.output && (
                         <div>
@@ -320,13 +384,12 @@ function App() {
                       )}
                     </Section>
 
-                    {/* Research — no Dot per task, use TaskStatus glyph instead */}
                     <Section label={`Research · ${pipeline.research?.completed_tasks || 0}/${pipeline.research?.total_tasks || 0}`} status={pipeline.research?.status}>
                       {pipeline.research?.tasks?.length > 0 && (
                         <div className="flex flex-col gap-2">
                           {pipeline.research.tasks.map((t, i) => (
                             <div key={t.id || i} className="flex items-start gap-2.5">
-                              <TaskStatus status={t.status} />
+                              <TaskStatusGlyph status={t.status} />
                               <div className="flex flex-col gap-0.5 min-w-0">
                                 {t.output?.query
                                   ? <span className="text-xs text-zinc-600 leading-relaxed">{t.output.query}</span>
@@ -342,7 +405,6 @@ function App() {
                       )}
                     </Section>
 
-                    {/* Writer — no nested Dot */}
                     <Section label={`Writer${pipeline.writer?.current_revision > 0 ? ` · rev ${pipeline.writer.current_revision}` : ""}`} status={pipeline.writer?.status}>
                       {writerContent && (
                         <div className="max-h-60 overflow-y-auto pr-1">
@@ -351,7 +413,6 @@ function App() {
                       )}
                     </Section>
 
-                    {/* Reviewer */}
                     <Section label="Reviewer" status={pipeline.reviewer?.status}>
                       {pipeline.reviewer?.feedback && (
                         <div>
@@ -368,6 +429,9 @@ function App() {
                                 </div>
                               ))}
                             </div>
+                          )}
+                          {showFeedbackInput && (
+                            <FeedbackInput requestId={requestId} onSubmitted={handleFeedbackSubmitted} />
                           )}
                         </div>
                       )}
@@ -395,13 +459,13 @@ function App() {
                   </div>
                 )}
 
-                {tab === "result" && (
+                {tab === "REPORT" && (
                   <div className="pt-6">
                     {writerContent ? (
                       <>
                         <div className="flex items-center justify-between mb-5 pb-4 border-b border-zinc-100">
                           <div className="flex items-center gap-3">
-                            {isDone && (
+                            {!showFeedbackInput && (
                               <span className={`text-[11px] border rounded-full px-2.5 py-0.5 ${pipeline.reviewer?.approved ? "text-green-600 border-green-200" : "text-zinc-500 border-zinc-200"}`}>
                                 {pipeline.reviewer?.approved ? "approved" : "complete"}
                               </span>
@@ -426,6 +490,9 @@ function App() {
                             <p className={`text-xs text-zinc-500 leading-relaxed pl-3 border-l-2 ${pipeline.reviewer.approved ? "border-green-300" : "border-amber-300"}`}>
                               {pipeline.reviewer.feedback}
                             </p>
+                            {showFeedbackInput && (
+                              <FeedbackInput requestId={requestId} onSubmitted={handleFeedbackSubmitted} />
+                            )}
                           </div>
                         )}
                       </>

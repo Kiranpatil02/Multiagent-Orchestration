@@ -223,3 +223,78 @@ def _build_status_response(user_request, tasks):
                 "pipeline": pipeline,
                 "all_outputs": outputs
             }
+
+
+
+@app.post("/api/tasks/{request_id}/feedback")
+async def submit_feedback(request_id: str, req: Request):
+    try:
+        body = await req.json()
+        user_feedback = body.get("feedback", "").strip()
+
+        if not user_feedback:
+            raise HTTPException(status_code=400, detail="Feedback cannot be empty")
+
+        cur = con.cursor()
+
+        user_request = cur.execute(
+            "SELECT * FROM user_requests WHERE id = ?", (request_id,)
+        ).fetchone()
+
+        if not user_request:
+            raise HTTPException(status_code=404, detail="Request not found")
+
+        plan = cur.execute(
+            "SELECT * FROM plans WHERE request_id = ?", (request_id,)
+        ).fetchone()
+
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+
+        plan_id = plan["id"]
+
+        latest_write = cur.execute(
+            """SELECT * FROM tasks WHERE plan_id = ? AND type = 'WRITE'
+               ORDER BY revision DESC, created_at DESC LIMIT 1""",
+            (plan_id,)
+        ).fetchone()
+
+        if not latest_write:
+            raise HTTPException(status_code=400, detail="No draft found to revise")
+
+        latest_write = dict(latest_write)
+        write_output = json.loads(latest_write["output_json"]) if latest_write["output_json"] else {}
+        last_draft = write_output.get("draft", write_output.get("content", ""))
+
+        latest_review = cur.execute(
+            """SELECT * FROM tasks WHERE plan_id = ? AND type = 'REVIEW'
+               ORDER BY revision DESC, created_at DESC LIMIT 1""",
+            (plan_id,)
+        ).fetchone()
+
+        reviewer_feedback = ""
+        if latest_review:
+            review_output = json.loads(latest_review["output_json"]) if latest_review["output_json"] else {}
+            reviewer_feedback = review_output.get("feedback", "")
+
+        next_revision = latest_write["revision"] + 1
+
+        combined_input = last_draft
+        if reviewer_feedback:
+            combined_input += f"\n\n=== REVIEWER FEEDBACK ===\n{reviewer_feedback}"
+        combined_input += f"\n\n=== ADDITIONAL DETAILS FROM USER ===\n{user_feedback}"
+
+        create_task(
+            plan_id=plan_id,
+            task_type=TaskType.WRITE.value,
+            input_data={"research_notes": combined_input},
+            parent_task_id=None,
+            revision=next_revision
+        )
+
+        return {"status": "ok", "revision": next_revision}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
