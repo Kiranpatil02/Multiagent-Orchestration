@@ -56,7 +56,7 @@ class Orchestrator:
                 conactinate="\n\n--\nn".join(all_research)
                 
                 print("=====Total Research=====",conactinate)
-                
+
                 create_task(
                     plan_id=plan_id,
                     task_type=TaskType.WRITE.value,
@@ -71,7 +71,7 @@ class Orchestrator:
 
             print("===========wRITE RESULTS==========",result)
 
-            finish_task(task_id,result)
+            finish_task(task_id, {**result, "content": result.get("draft", "")})
 
             create_task(
                 plan_id=plan_id,

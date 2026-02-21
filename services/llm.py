@@ -7,8 +7,8 @@ load_dotenv()
 
 
 client=OpenAI(
-    api_key=os.getenv("Z_API_KEY"),
-    base_url="https://api.z.ai/api/paas/v4/"
+    api_key=os.getenv("GEMINI_API_KEY"),
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
 def llm(system_prompt,user_prompt):
@@ -16,7 +16,7 @@ def llm(system_prompt,user_prompt):
     try:
 
         response=client.chat.completions.create(
-            model="GLM-4.7-Flash",
+            model="gemini-2.5-flash",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
