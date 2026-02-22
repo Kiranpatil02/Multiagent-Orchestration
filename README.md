@@ -8,10 +8,14 @@
 </p>
 
 <h3>
-  <a href="">Docs</a>
+  <a href="https://docs.google.com/document/d/1EjuRAqx93Ntkm3Loq78OnGxXs1kYUnDE/edit?usp=drive_link&ouid=104595812794159257675&rtpof=true&sd=true">Docs</a>
 </h3>
 
 </div>
+
+
+
+
 
 ## Getting Started
 
@@ -28,6 +32,7 @@
 ```
 git clone https://github.com/Kiranpatil02/Multiagent-Orchestration.git
 ```
+### Backend
 
 Install dependency packages
 ```
@@ -48,7 +53,7 @@ Start the Backend API
 ```
 poetry run python uvicorn api.api:app
 ```
-Frontend setup
+### Frontend
 
 ```
 cd frontend/
@@ -64,6 +69,23 @@ Start the Server
 ```
 npm run dev
 ```
+
+## Agents Workflow
+
+### 1. Planner Agent
+- Breaks the user’s request into discrete sub-tasks and determines
+execution order.
+
+### 2. Research Agent
+- Gathers information for each sub-task
+
+### 3. Writer Agent
+- Synthesizes research into a draft report.
+
+### 4. Reviewer Agent
+- Evaluates the draft, provides feedback, and can send it back for
+revision.
+
 
 
 
